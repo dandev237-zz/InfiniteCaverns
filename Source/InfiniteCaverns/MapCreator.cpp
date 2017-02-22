@@ -1,11 +1,13 @@
 // Daniel Alejandro Castro García <dandev237@gmail.com>
 
-#include "MapCreator.h"
 #include "InfiniteCaverns.h"
+#include "MapCreator.h"
+#include "MeshCreator.h"
 
 void AMapCreator::GenerateCavern(const int32 Width, const int32 Height, const int32 WallPercentage, const int32 SmoothingIterations)
 {
-	TArray<int> Map;
+	TArray<int32> Map;
+	Map.Reserve(Width*Height);
 
 	//Randomly fill map with 0's and 1's
 	//0 -> Floor (Passable terrain)
@@ -47,13 +49,17 @@ void AMapCreator::GenerateCavern(const int32 Width, const int32 Height, const in
 		++SmoothingCounter;
 	}
 
+	//Create the mesh
+	MeshCreator MeshGen = MeshCreator();
+	MeshGen.CreateMesh(Map, 1.0f, Width, Height);
+
 	for (int i = 0; i < Width; ++i)
 	{
 		for (int j = 0; j < Height; ++j)
 		{
 			if (Map[j*Width + i] == 1)
 			{
-				DrawDebugBox(GetWorld(), FVector(100 * i, 100 * j, 0), FVector(45, 45, 45), FColor::Black, false, 200.0f);
+				DrawDebugBox(GetWorld(), FVector(100 * i, 100 * j, 0), FVector(45, 45, 45), FColor::Black, false, 5.0f);
 			}
 		}
 	}
@@ -65,6 +71,7 @@ int32 AMapCreator::GetSorroundingWallsOfCell(const TArray<int32> &Map, const int
 
 	//Moor Neighborhood: 8 adjacents
 	TArray<int32> Indexes;
+	Indexes.Reserve(8);
 	Indexes.Add(CellIndex - (Width - 1));	//Upper left
 	Indexes.Add(CellIndex - Width);			//Upper
 	Indexes.Add(CellIndex - (Width + 1));	//Upper right
@@ -92,6 +99,6 @@ bool AMapCreator::IsValidIndex(const int32 &Index, const int32 &Width, const int
 
 bool AMapCreator::IsInEdgeOfMap(const int32 &Index, const int32 &Width, const int32 &Height)
 {
-	//Upper edge, Lower edge, Left edge, Right edge,
+	//Upper edge, Lower edge, Left edge, Right edge
 	return (Index / Width == 0 || (Index >= (Width * (Height - 1)) && Index <= (Width * Height) - 1) || Index % Width == 0 || Index % Width == Width - 1);
 }
