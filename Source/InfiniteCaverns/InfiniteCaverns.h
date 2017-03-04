@@ -4,3 +4,8 @@
 
 #include "Engine.h"
 
+struct MeshData
+{
+	TArray<FVector> Vertices;
+	TArray<int32> Triangles;
+};

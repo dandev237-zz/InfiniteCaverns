@@ -3,6 +3,8 @@
 #include "InfiniteCaverns.h"
 #include "MapCreator.h"
 #include "MeshCreator.h"
+#include "RuntimeMeshActor.h"
+#include <memory>
 
 void AMapCreator::GenerateCavern(const int32 Width, const int32 Height, const int32 WallPercentage, const int32 SmoothingIterations)
 {
@@ -50,9 +52,23 @@ void AMapCreator::GenerateCavern(const int32 Width, const int32 Height, const in
 
 	//Create the mesh
 	MeshCreator MeshGen = MeshCreator();
-	MeshGen.CreateDynamicMesh(Map, 1.0f, Width, Height);
+	MeshGen.CalculateTrianglesForMesh(Map, 1.0f, Width, Height);
+	
+	//Spawn the map!!
+	MeshData Data{ MeshGen.Vertices, MeshGen.Triangles };
+	ARuntimeMeshActor* RuntimeMap = GetWorld()->SpawnActor<ARuntimeMeshActor>(ARuntimeMeshActor::StaticClass(), FVector(.0f, .0f, .0f), FRotator(0, 0, 0));
+	if (RuntimeMap)
+	{
+		GLog->Log("RuntimeMap SPAWNED");
+		RuntimeMap->CreateRuntimeMesh(Data);
+	}
+	else
+	{
+		GLog->Log("ERROR: RuntimeMap NULL");
+	}
+	
 
-	for (int i = 0; i < Width; ++i)
+	/*for (int i = 0; i < Width; ++i)
 	{
 		for (int j = 0; j < Height; ++j)
 		{
@@ -61,7 +77,7 @@ void AMapCreator::GenerateCavern(const int32 Width, const int32 Height, const in
 				DrawDebugBox(GetWorld(), FVector(100 * i, 100 * j, 0), FVector(45, 45, 45), FColor::Black, false, 5.0f);
 			}
 		}
-	}
+	}*/
 }
 
 int32 AMapCreator::GetSorroundingWallsOfCell(const TArray<int32> &Map, const int32 &CellIndex, const int32 &Width, const int32 &Height)
@@ -101,3 +117,6 @@ bool AMapCreator::IsInEdgeOfMap(const int32 &Index, const int32 &Width, const in
 	//Upper edge, Lower edge, Left edge, Right edge
 	return (Index / Width == 0 || (Index >= (Width * (Height - 1)) && Index <= (Width * Height) - 1) || Index % Width == 0 || Index % Width == Width - 1);
 }
+
+
+
