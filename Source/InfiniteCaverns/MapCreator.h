@@ -6,8 +6,9 @@
 #include "MapCreator.generated.h"
 
 /**
- * 
- */
+*
+*/
+
 UCLASS()
 class INFINITECAVERNS_API AMapCreator : public ALevelScriptActor
 {
