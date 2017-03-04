@@ -11,8 +11,8 @@ Node::Node(FVector _Pos)
 ControlNode::ControlNode(FVector _Pos, bool _Active, float Size) : Node(_Pos)
 {
 	Active = _Active;
-	Above = Node(_Pos + FVector{ 0.0f, 0.0f, 1.0f } *Size);
-	Right = Node(_Pos + FVector{ 1.0f, 0.0f, 0.0f } *Size);
+	Above = Node(_Pos + (FVector::UpVector * (Size/2.0f)));
+	Right = Node(_Pos + (FVector::ForwardVector * (Size/2.0f)));
 }
 
 Square::Square(ControlNode _TopLeft, ControlNode _TopRight, ControlNode _BottomLeft, ControlNode _BottomRight)
@@ -49,21 +49,28 @@ Square::Square(ControlNode _TopLeft, ControlNode _TopRight, ControlNode _BottomL
 
 void MeshCreator::CalculateTrianglesForMesh(const TArray<int32> &Map, const float &Size, const int32 &Width, const int32 &Height)
 {
-	MeshCreator::MeshGrid = SquareGrid(Map, Size, Width, Height);
+	MeshGrid = SquareGrid(Map, Size, Width, Height);
 
-	for (int x = 0; x < Width - 1; ++x)
+	//Worst-case scenario estimation for number of vertices contained in Vertices array
+	int32 HorizontalVertices = (Width * 2 + 1) * (Height + 1);
+	int32 VerticalVertices = (Height + 1) * Height;
+	Vertices.Reserve(HorizontalVertices + VerticalVertices);
+
+	for (int x = 0; x < MeshGrid.SquaresGrid.Num(); ++x)
 	{
-		for (int y = 0; y < Height - 1; ++y)
+		for (int y = 0; y < MeshGrid.SquaresGrid[x].Num(); ++y)
 		{
 			TriangulateSquare(MeshGrid.SquaresGrid[x][y]);
 		}
 	}
+
+	Vertices.Shrink();
 }
 
 SquareGrid::SquareGrid(const TArray<int32, FDefaultAllocator> &Map, const float &Size, const int32 &Width, const int32 &Height)
 {
-	float MapWidth = Width *Size;
-	float MapHeight = Height *Size;
+	float MapWidth = Width * Size;
+	float MapHeight = Height * Size;
 
 	//Create all necessary ControlNodes
 	TArray<TArray<ControlNode>> GridControlNodes;
@@ -75,7 +82,7 @@ SquareGrid::SquareGrid(const TArray<int32, FDefaultAllocator> &Map, const float 
 		{
 			for (int y = 0; y < Height; ++y)
 			{
-				FVector NodePosition = FVector{ -MapWidth / 2 + x*Size + Size / 2, 0, -MapHeight / 2 + y*Size + Size / 2 };
+				FVector NodePosition = FVector{ -MapWidth / 2.0f + x*Size + Size / 2.0f, 0, -MapHeight / 2.0f + y*Size + Size / 2.0f };
 				Nodes.Add(ControlNode(NodePosition, Map[y*Width + x] == 1, Size));
 			}
 			GridControlNodes.Add(Nodes);
@@ -221,18 +228,18 @@ void MeshCreator::TriangulateSquare(const Square &Square)
 	}
 
 	Points.Shrink();
-	MeshFromPoints(Points);		//RETURN PMC  here
+	MeshFromPoints(Points);
 }
 
 void MeshCreator::MeshFromPoints(TArray<Node> &Points)
 {
-
 	for (int i = 0; i < Points.Num(); ++i)
 	{
 		if (Points[i].Index == -1) //Vertex is not initialized
 		{
-			Points[i].Index = Vertices.Num();	//Get the actual count of elements in Vertices and use it as vertex index
-			Vertices.Add(Points[i].Position);
+			//Points[i].Index = (Vertices.Add(Points[i].Position)).AsInteger();	//Vertices is a set - Add returns pointer to the index of the added element in the Vertices set
+			Points[i].Index = Vertices.AddUnique(Points[i].Position);
+			GLog->Log("Vertice añadido!!");
 		}
 	}
 
@@ -246,27 +253,26 @@ void MeshCreator::MeshFromPoints(TArray<Node> &Points)
 	switch (Points.Num())
 	{
 	case 6:
-		Triangles.Add(Points[0].Index);
-		Triangles.Add(Points[4].Index);
-		Triangles.Add(Points[5].Index);
+		TriangleFromVertices(Points[0].Index, Points[4].Index, Points[5].Index);
 
 	case 5:
-		Triangles.Add(Points[0].Index);
-		Triangles.Add(Points[3].Index);
-		Triangles.Add(Points[4].Index);
+		TriangleFromVertices(Points[0].Index, Points[3].Index, Points[4].Index);
 
 	case 4:
-		Triangles.Add(Points[0].Index);
-		Triangles.Add(Points[2].Index);
-		Triangles.Add(Points[3].Index);
+		TriangleFromVertices(Points[0].Index, Points[2].Index, Points[3].Index);
 
 	case 3:
-		Triangles.Add(Points[0].Index);
-		Triangles.Add(Points[1].Index);
-		Triangles.Add(Points[2].Index);
+		TriangleFromVertices(Points[0].Index, Points[1].Index, Points[2].Index);
 		break;
 
 	default:
 		break;
 	}
+}
+
+void MeshCreator::TriangleFromVertices(const int32& Vertex1, const int32& Vertex2, const int32& Vertex3)
+{
+	Triangles.Add(Vertex1);
+	Triangles.Add(Vertex2);
+	Triangles.Add(Vertex3);
 }

@@ -48,7 +48,7 @@ private:
 
 public:
 	TArray<FVector> Vertices;
-	TArray<int32> Triangles;	//Each triangle is defined by a tuple of three integers (vertices in clockwise order)
+	TArray<int32> Triangles;	//Each triangle is defined by a three consecutive integers (vertices in clockwise order)
 
 	MeshCreator() {};
 	~MeshCreator() {};
@@ -58,4 +58,7 @@ public:
 	void TriangulateSquare(const Square &Square);
 
 	void MeshFromPoints(TArray<Node> &Points);
+
+	void TriangleFromVertices(const int32& Vertex1, const int32& Vertex2, const int32& Vertex3);
+
 };
